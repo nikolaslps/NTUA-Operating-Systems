@@ -24,7 +24,8 @@
 
 #define N 10000000
 
-/*Dots indicate lines where you are free to insert code at will */
+/* Dots indicate lines where you are free to insert code at will */
+/* ... */
 #if defined(SYNC_ATOMIC) ^ defined(SYNC_MUTEX) == 0
 # error You must #define exactly one of SYNC_ATOMIC or SYNC_MUTEX.
 #endif
@@ -35,19 +36,27 @@
 # define USE_ATOMIC_OPS 0
 #endif
 
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 void *increase_fn(void *arg)
 {
-	int i;
+	int i, ret;
 	volatile int *ip = arg;
 	
 	fprintf(stderr, "About to increase variable %d times\n", N);
 	for (i = 0; i < N; i++) {
 		if (USE_ATOMIC_OPS) {
 			/* You can modify the following line */
-			++(*ip);
+			__sync_add_and_fetch(&ip, 1);
 		} else {
 			/* You cannot modify the following line */
+			ret = pthread_mutex_lock(&lock);
+			if (ret)
+                                perror_pthread(ret, "lock");
 			++(*ip);
+			pthread_mutex_unlock(&lock);
+			if (ret)
+                                perror_pthread(ret, "unlock");
 		}
 	}
 	fprintf(stderr, "Done increasing variable.\n");
@@ -57,21 +66,23 @@ void *increase_fn(void *arg)
 
 void *decrease_fn(void *arg)
 {
-	int i;
+	int i, ret;
 	volatile int *ip = arg;
 
 	fprintf(stderr, "About to decrease variable %d times\n", N);
 	for (i = 0; i < N; i++) {
 		if (USE_ATOMIC_OPS) {
-			/* ... */
 			/* You can modify the following line */
-			--(*ip);
-			/* ... */
+			__sync_sub_and_fetch(&ip, 1);
 		} else {
-			/* ... */
-			/* You cannot modify the following line */
+			ret = pthread_mutex_lock(&lock);
+			if (ret)
+				perror_pthread(ret, "lock");
+			/* You cannot modify the following line*/
 			--(*ip);
-			/* ... */
+			ret = pthread_mutex_unlock(&lock);
+			if (ret)
+                                perror_pthread(ret, "unlock");
 		}
 	}
 	fprintf(stderr, "Done decreasing variable.\n");
@@ -114,9 +125,11 @@ int main(int argc, char *argv[])
 	if (ret)
 		perror_pthread(ret, "pthread_join");
 
-	/*
-	 * Is everything OK?
-	 */
+
+	ret = pthread_mutex_destroy(&lock);
+	if (ret)
+		perror_pthread(ret, "lock destroy");
+
 	ok = (val == 0);
 
 	printf("%sOK, val = %d.\n", ok ? "" : "NOT ", val);
