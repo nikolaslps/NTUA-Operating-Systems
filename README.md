@@ -95,6 +95,6 @@
 ---
 
 ## Author
-- **Nikolaos Lappas**
+- **NIKOLAOS LAPPAS**
 - **ECE NTUA**
 
