@@ -1,4 +1,0 @@
-Hello, our names are George and Nikos and we are third year students of NTUA 
-and more specifically of the Department of Electrical and Computer
-Engineering!
-We are currently focusing on the subject of Operating Systems
